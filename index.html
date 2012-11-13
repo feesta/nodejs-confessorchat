@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Confession Room</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+
+<script src="/socket.io/socket.io.js"></script>
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+<script type="text/javascript">
+var socket = io.connect('/');
+socket.on('from server', function (data) {
+    console.log(data);
+    if (data.message) {
+        //document.write(data.message);
+        $("#messages").append("<div>" + data.message + "</div>");
+    }
+    if (data.confession) {
+        console.info("confession", data.confession);
+        var button = $("<button class='forgive'>Forgive</button>").data("confessObj", data.confession);
+        $("<div>" + data.confession.message + "</div>").append(button).appendTo("#messages");
+    }
+    if (data.online) {
+        console.info("online:", data.online);
+        $("#onlinecount").html(data.online + " online");
+    }
+});
+
+$(function(){
+    $("#ui button").on("click", function(e){
+        var message = $("#textinput").val();
+        socket.emit('client confesses', { message: message });
+        $("#textinput").val("").focus();
+        $("#messages").append("<div class='ownmessage'>Confessing: " + message + "</div>");
+        e.preventDefault();
+    });
+    $("#textinput").focus();
+
+    $(document).on("click", "button.forgive", function() {
+        var obj = $(this);
+        obj.text("Forgiven").attr("disabled", "disabled");
+        var confessObj = obj.data("confessObj");
+        socket.emit('client forgives', {confessObj: confessObj});
+    });
+});
+
+</script>
+
+<style>
+    h1 {font-size:24px;}
+    form {display:inline-block;}
+    body {font-family:sans-serif;}
+
+    #onlinecount {font-size:small; color:#999;}
+    #messages {color:#444; font-size:11px;}
+    #messages .ownmessage {font-weight:bold;}
+</style>
+
+</head>
+
+<body>
+    <h1>Confession Room</h1>
+    <div id="ui">
+        <form>
+            <input id="textinput" placeholder="confess" />
+            <button>send</button>
+        </form>
+        <span id="onlinecount">1 online</span>
+    </div>
+    <div id="messages"></div>
+
+</body>
+</html>
